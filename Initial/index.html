@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SEO Tool</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; background: #f4f4f9; }
+        .container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        input { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { background: #007bff; color: white; border: none; padding: 12px; width: 100%; cursor: pointer; border-radius: 4px; font-size: 16px; }
+        button:hover { background: #0056b3; }
+        #results { display: none; margin-top: 20px; }
+        .section { margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 4px; border: 1px solid #e9ecef; }
+        h2 { margin-top: 0; font-size: 18px; color: #333; }
+        .alert { color: #856404; background-color: #fff3cd; padding: 10px; margin-bottom: 5px; border-radius: 4px; }
+        .good { color: #155724; background-color: #d4edda; padding: 10px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🚀 SEO Automation</h1>
+    
+    <label>Target URL</label>
+    <input type="text" id="urlInput" placeholder="https://www.ginilondon.com/collections/new-in">
+    
+    <label>Focus Keyword</label>
+    <input type="text" id="keywordInput" placeholder="e.g. Women's new arrivals">
+    
+    <button onclick="analyzeSEO()">Analyze Page</button>
+
+    <div id="results">
+        <div class="section">
+            <h2>📊 Current Status</h2>
+            <p><strong>Title:</strong> <span id="currentTitle"></span></p>
+            <p><strong>Description:</strong> <span id="currentDesc"></span></p>
+            <p><strong>Keyword Count:</strong> <span id="keywordCount"></span></p>
+            <p><strong>🚀 Speed Score:</strong> <span id="speedScore"></span>/100</p>
+        </div>
+
+        <div class="section">
+            <h2>⚠️ Technical Issues</h2>
+            <div id="auditList"></div>
+        </div>
+
+        <div class="section">
+            <h2>🤖 AI Suggestions</h2>
+            <p><strong>Suggested Title:</strong><br><span id="newTitle"></span></p>
+            <hr>
+            <p><strong>Suggested Description:</strong><br><span id="newDesc"></span></p>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function analyzeSEO() {
+        const url = document.getElementById('urlInput').value;
+        const keyword = document.getElementById('keywordInput').value;
+        const btn = document.querySelector('button');
+        
+        if(!url || !keyword) { alert("Please enter URL and Keyword"); return; }
+
+        btn.innerText = "Analyzing... (This takes ~10 seconds)";
+        document.getElementById('results').style.display = "none";
+        
+        try {
+            const response = await fetch('http://127.0.0.1:8000/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: url, focus_keyword: keyword })
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.detail || "Server Error");
+            }
+
+            const data = await response.json();
+
+            // Fill Data
+            document.getElementById('currentTitle').innerText = data.current_status.title;
+            document.getElementById('currentDesc').innerText = data.current_status.description;
+            document.getElementById('keywordCount').innerText = data.current_status.keyword_found_times;
+            document.getElementById('speedScore').innerText = data.current_status.mobile_speed_score;
+            
+            document.getElementById('newTitle').innerText = data.ai_suggestions.suggested_title;
+            document.getElementById('newDesc').innerText = data.ai_suggestions.suggested_description;
+
+            // Audit List
+            const auditDiv = document.getElementById('auditList');
+            auditDiv.innerHTML = "";
+            if(data.technical_audit.length === 0) {
+                auditDiv.innerHTML = "<div class='good'>✅ No critical issues found!</div>";
+            } else {
+                data.technical_audit.forEach(issue => {
+                    auditDiv.innerHTML += `<div class='alert'>⚠️ ${issue}</div>`;
+                });
+            }
+
+            document.getElementById('results').style.display = "block";
+
+        } catch (error) {
+            alert("Error: " + error.message);
+        } finally {
+            btn.innerText = "Analyze Page";
+        }
+    }
+</script>
+
+</body>
+</html>
